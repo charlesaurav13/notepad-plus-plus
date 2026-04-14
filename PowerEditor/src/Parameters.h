@@ -49,6 +49,7 @@
 #include "ToolBar.h"
 #include "colors.h"
 #include "shortcut.h"
+#include "AIAssistant/AISettings.h"
 
 #ifdef _WIN64
 
@@ -873,6 +874,8 @@ struct NppGUI final
 	DarkModeConf _darkmode;
 
 	LargeFileRestriction _largeFileRestriction;
+
+	NppAISettings _aiSettings;
 };
 
 

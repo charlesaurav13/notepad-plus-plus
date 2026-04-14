@@ -6537,6 +6537,28 @@ void NppParameters::feedGUIParameters(const NppXml::Element& element)
 			}
 		}
 	}
+
+	// Read AI settings
+	NppXml::Element aiNode = NppXml::firstChildElement(element, "AIAssistant");
+	if (aiNode)
+	{
+		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "model"); n)
+		{
+			const char* val = NppXml::attribute(n, "value", "deepseek-r1:7b");
+			_nppGUI._aiSettings.model = string2wstring(val);
+		}
+		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "endpoint"); n)
+		{
+			const char* val = NppXml::attribute(n, "value", "http://localhost:11434");
+			_nppGUI._aiSettings.endpoint = string2wstring(val);
+		}
+		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "autoCompleteEnabled"); n)
+			_nppGUI._aiSettings.autoCompleteOn = getBoolAttribute(n, "value", true);
+		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "autoCompleteDelay"); n)
+			_nppGUI._aiSettings.autoCompleteDelayMs = NppXml::intAttribute(n, "value", 500);
+		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "maxTokens"); n)
+			_nppGUI._aiSettings.maxTokens = NppXml::intAttribute(n, "value", 100);
+	}
 }
 
 // <GUIConfig name="ScintillaPrimaryView" lineNumberMargin="show" lineNumberDynamicWidth="yes" bookMarkMargin="show" indentGuideLine="show"
@@ -7650,6 +7672,25 @@ void NppParameters::createXmlTreeFromGUIParams()
 		setBoolAttribute(GUIConfigElement, "lightTbFluentMono", lightTbInfo._tbUseMono);
 		NppXml::setAttribute(GUIConfigElement, "lightTabIconSet", lightDefaults._tabIconSet);
 		setBoolAttribute(GUIConfigElement, "lightTabUseTheme", lightDefaults._tabUseTheme);
+	}
+
+	// Write AI settings
+	{
+		NppXml::Element oldAiNode = NppXml::firstChildElement(nppRoot, "AIAssistant");
+		if (oldAiNode)
+			NppXml::deleteChild(nppRoot, oldAiNode);
+
+		NppXml::Element aiNode2 = NppXml::createChildElement(nppRoot, "AIAssistant");
+		NppXml::Element aiModel    = NppXml::createChildElement(aiNode2, "model");
+		NppXml::Element aiEndpoint = NppXml::createChildElement(aiNode2, "endpoint");
+		NppXml::Element aiAutoCmp  = NppXml::createChildElement(aiNode2, "autoCompleteEnabled");
+		NppXml::Element aiDelay    = NppXml::createChildElement(aiNode2, "autoCompleteDelay");
+		NppXml::Element aiTokens   = NppXml::createChildElement(aiNode2, "maxTokens");
+		NppXml::setAttribute(aiModel,    "value", wstring2string(_nppGUI._aiSettings.model));
+		NppXml::setAttribute(aiEndpoint, "value", wstring2string(_nppGUI._aiSettings.endpoint));
+		setBoolAttribute(aiAutoCmp, "value", _nppGUI._aiSettings.autoCompleteOn);
+		NppXml::setAttribute(aiDelay,  "value", _nppGUI._aiSettings.autoCompleteDelayMs);
+		NppXml::setAttribute(aiTokens, "value", _nppGUI._aiSettings.maxTokens);
 	}
 
 	// <GUIConfig name="ScintillaPrimaryView" lineNumberMargin="show" lineNumberDynamicWidth="yes" bookMarkMargin="show" indentGuideLine="show"
