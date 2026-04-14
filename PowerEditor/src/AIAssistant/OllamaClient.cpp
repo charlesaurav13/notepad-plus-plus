@@ -48,9 +48,11 @@ std::wstring OllamaClient::utf8ToWstr(const std::string& s)
 // -------------------------------------------------------------------------
 // parseEndpoint
 // -------------------------------------------------------------------------
-void OllamaClient::parseEndpoint(std::wstring& outHost, INTERNET_PORT& outPort) const
+/*static*/
+void OllamaClient::parseEndpointStr(const std::wstring& endpoint,
+                                     std::wstring& outHost, INTERNET_PORT& outPort)
 {
-    std::wstring ep = _endpoint;
+    std::wstring ep = endpoint;
 
     // Strip scheme
     auto stripScheme = [&](const std::wstring& scheme) {
@@ -84,6 +86,11 @@ void OllamaClient::parseEndpoint(std::wstring& outHost, INTERNET_PORT& outPort) 
     }
 }
 
+void OllamaClient::parseEndpoint(std::wstring& outHost, INTERNET_PORT& outPort) const
+{
+    parseEndpointStr(_endpoint, outHost, outPort);
+}
+
 // -------------------------------------------------------------------------
 // httpPost — core WinHTTP request
 // -------------------------------------------------------------------------
@@ -113,8 +120,8 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
     }
 
     // Set timeouts: resolve, connect, send, receive
-    // For streaming, receive timeout is 0 (infinite) so tokens keep flowing
-    DWORD recvTimeout = streaming ? 0 : 30000;
+    // For streaming, use 120s max to avoid hanging indefinitely
+    DWORD recvTimeout = streaming ? 120000 : 30000;
     WinHttpSetTimeouts(hSess, 10000, 10000, 30000, recvTimeout);
 
     hConn = WinHttpConnect(hSess, host.c_str(), port, 0);
@@ -160,8 +167,30 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
         throw std::runtime_error("WinHttpReceiveResponse failed");
     }
 
+    // Check HTTP status code
+    DWORD statusCode = 0;
+    DWORD statusCodeSize = sizeof(statusCode);
+    WinHttpQueryHeaders(hReq, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                        WINHTTP_HEADER_NAME_BY_INDEX, &statusCode, &statusCodeSize,
+                        WINHTTP_NO_HEADER_INDEX);
+    if (statusCode >= 400) {
+        // Read error body for context
+        std::string errBody;
+        DWORD bytesAvail = 0;
+        char buf[1024];
+        while (WinHttpQueryDataAvailable(hReq, &bytesAvail) && bytesAvail > 0) {
+            DWORD toRead = min(bytesAvail, (DWORD)sizeof(buf));
+            DWORD bytesRead = 0;
+            if (!WinHttpReadData(hReq, buf, toRead, &bytesRead) || bytesRead == 0) break;
+            errBody.append(buf, bytesRead);
+        }
+        cleanup();
+        return "__HTTP_ERROR__:" + std::to_string(statusCode) + ":" + errBody;
+    }
+
     // ---- Read data in 4096-byte chunks ----
     std::string lineBuffer; // used only when streaming to buffer partial lines
+    bool doneSent = false;  // guard to ensure AI_MSG_STREAM_DONE is always posted
 
     for (;;)
     {
@@ -219,8 +248,9 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
                         if (!token.empty() && hwndNotify)
                         {
                             auto* s = new std::string(std::move(token));
-                            PostMessage(hwndNotify, AI_MSG_STREAM_CHUNK,
-                                        0, reinterpret_cast<LPARAM>(s));
+                            if (!PostMessage(hwndNotify, AI_MSG_STREAM_CHUNK,
+                                             0, reinterpret_cast<LPARAM>(s)))
+                                delete s;
                         }
                     }
 
@@ -228,7 +258,10 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
                     if (j.contains("done") && j["done"].is_boolean() && j["done"].get<bool>())
                     {
                         if (hwndNotify)
+                        {
                             PostMessage(hwndNotify, AI_MSG_STREAM_DONE, 0, 0);
+                            doneSent = true;
+                        }
                         cleanup();
                         return {};
                     }
@@ -242,6 +275,11 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
             // Keep the unfinished tail for the next iteration
             lineBuffer = lineBuffer.substr(start);
         }
+    }
+
+    // Ensure AI_MSG_STREAM_DONE is always sent when streaming
+    if (streaming && hwndNotify && !doneSent) {
+        PostMessage(hwndNotify, AI_MSG_STREAM_DONE, 0, 0);
     }
 
     cleanup();
@@ -405,6 +443,13 @@ AIResult OllamaClient::generateSync(const std::string& prompt)
         std::string bodyStr = body.dump();
         std::string raw = httpPost(host, port, L"/api/generate", bodyStr, false, nullptr);
 
+        // Check for HTTP-level error sentinel
+        if (raw.substr(0, 14) == "__HTTP_ERROR__") {
+            result.error = "Ollama HTTP error: " + raw.substr(14);
+            result.success = false;
+            return result;
+        }
+
         // Parse response
         auto j = nlohmann::json::parse(raw);
         if (j.contains("response") && j["response"].is_string())
@@ -445,10 +490,10 @@ DWORD WINAPI OllamaClient::workerThread(LPVOID param)
         {
             std::wstring host;
             INTERNET_PORT port = 11434;
-            tp->client->parseEndpoint(host, port);
+            OllamaClient::parseEndpointStr(tp->endpoint, host, port);
 
             nlohmann::json body;
-            body["model"]  = wstrToUtf8(tp->client->_model);
+            body["model"]  = wstrToUtf8(tp->model);
             body["prompt"] = tp->prompt;
             body["stream"] = true;
 
@@ -462,26 +507,84 @@ DWORD WINAPI OllamaClient::workerThread(LPVOID param)
             auto* res = new AIResult();
             res->success = false;
             res->error   = ex.what();
-            PostMessage(tp->hwndNotify, AI_MSG_ERROR,
-                        0, reinterpret_cast<LPARAM>(res));
+            if (!PostMessage(tp->hwndNotify, AI_MSG_ERROR,
+                             0, reinterpret_cast<LPARAM>(res)))
+                delete res;
         }
         catch (...)
         {
             auto* res = new AIResult();
             res->success = false;
             res->error   = "Unknown streaming error";
-            PostMessage(tp->hwndNotify, AI_MSG_ERROR,
-                        0, reinterpret_cast<LPARAM>(res));
+            if (!PostMessage(tp->hwndNotify, AI_MSG_ERROR,
+                             0, reinterpret_cast<LPARAM>(res)))
+                delete res;
         }
     }
     else
     {
-        // Non-streaming path
-        AIResult result = tp->client->generateSync(tp->prompt);
-        auto* res = new AIResult(std::move(result));
-        UINT msg = res->success ? AI_MSG_RESULT : AI_MSG_ERROR;
-        PostMessage(tp->hwndNotify, msg,
-                    0, reinterpret_cast<LPARAM>(res));
+        // Non-streaming path — use snapshotted model/endpoint to avoid data race
+        AIResult result;
+        try
+        {
+            std::wstring host;
+            INTERNET_PORT port = 11434;
+            OllamaClient::parseEndpointStr(tp->endpoint, host, port);
+
+            nlohmann::json body;
+            body["model"]  = wstrToUtf8(tp->model);
+            body["prompt"] = tp->prompt;
+            body["stream"] = false;
+
+            std::string bodyStr = body.dump();
+            std::string raw = tp->client->httpPost(host, port, L"/api/generate",
+                                                   bodyStr, false, nullptr);
+
+            // Check for HTTP-level error sentinel
+            if (raw.substr(0, 14) == "__HTTP_ERROR__") {
+                result.error   = "Ollama HTTP error: " + raw.substr(14);
+                result.success = false;
+            }
+            else
+            {
+                auto j = nlohmann::json::parse(raw);
+                if (j.contains("response") && j["response"].is_string())
+                {
+                    result.response = j["response"].get<std::string>();
+                    result.success  = true;
+                }
+                else
+                {
+                    result.success = false;
+                    result.error   = "No 'response' field in Ollama reply";
+                }
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            result.success = false;
+            result.error   = ex.what();
+        }
+        catch (...)
+        {
+            result.success = false;
+            result.error   = "Unknown error in worker thread";
+        }
+
+        if (result.success)
+        {
+            auto* pResult = new AIResult(std::move(result));
+            if (!PostMessage(tp->hwndNotify, AI_MSG_RESULT,
+                             0, reinterpret_cast<LPARAM>(pResult)))
+                delete pResult;
+        }
+        else
+        {
+            auto* pErr = new AIResult(std::move(result));
+            if (!PostMessage(tp->hwndNotify, AI_MSG_ERROR,
+                             0, reinterpret_cast<LPARAM>(pErr)))
+                delete pErr;
+        }
     }
 
     delete tp;
@@ -493,12 +596,17 @@ DWORD WINAPI OllamaClient::workerThread(LPVOID param)
 // -------------------------------------------------------------------------
 void OllamaClient::generate(const std::string& prompt, HWND hwndNotify)
 {
-    auto* tp = new ThreadParam{ this, prompt, hwndNotify, false };
+    auto* tp = new ThreadParam{ this, prompt, hwndNotify, false, _model, _endpoint };
     HANDLE h = CreateThread(nullptr, 0, workerThread, tp, 0, nullptr);
     if (h)
         CloseHandle(h);
     else
-        delete tp; // thread creation failed — clean up
+    {
+        delete tp;
+        auto* pErr = new AIResult{"", false, "Failed to create AI worker thread."};
+        if (!PostMessage(hwndNotify, AI_MSG_ERROR, 0, reinterpret_cast<LPARAM>(pErr)))
+            delete pErr;
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -506,10 +614,15 @@ void OllamaClient::generate(const std::string& prompt, HWND hwndNotify)
 // -------------------------------------------------------------------------
 void OllamaClient::generateStream(const std::string& prompt, HWND hwndNotify)
 {
-    auto* tp = new ThreadParam{ this, prompt, hwndNotify, true };
+    auto* tp = new ThreadParam{ this, prompt, hwndNotify, true, _model, _endpoint };
     HANDLE h = CreateThread(nullptr, 0, workerThread, tp, 0, nullptr);
     if (h)
         CloseHandle(h);
     else
-        delete tp; // thread creation failed — clean up
+    {
+        delete tp;
+        auto* pErr = new AIResult{"", false, "Failed to create AI worker thread."};
+        if (!PostMessage(hwndNotify, AI_MSG_ERROR, 0, reinterpret_cast<LPARAM>(pErr)))
+            delete pErr;
+    }
 }

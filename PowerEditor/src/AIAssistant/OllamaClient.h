@@ -21,6 +21,7 @@ public:
 
     // Async non-streaming: posts AI_MSG_RESULT or AI_MSG_ERROR to hwndNotify.
     // LPARAM = heap-allocated AIResult* (receiver must delete).
+    // AI_MSG_ERROR also sends AIResult* in LPARAM (check .error field).
     void generate(const std::string& prompt, HWND hwndNotify);
 
     // Async streaming: posts AI_MSG_STREAM_CHUNK per token, then AI_MSG_STREAM_DONE.
@@ -54,12 +55,16 @@ private:
         std::string   prompt;
         HWND          hwndNotify;
         bool          stream;
+        std::wstring  model;     // snapshot at dispatch time
+        std::wstring  endpoint;  // snapshot at dispatch time
     };
 
     static DWORD WINAPI workerThread(LPVOID param);
 
     // Parse _endpoint into host and port (strips http://)
     void parseEndpoint(std::wstring& outHost, INTERNET_PORT& outPort) const;
+    // Parse an explicit endpoint string into host and port
+    static void parseEndpointStr(const std::wstring& endpoint, std::wstring& outHost, INTERNET_PORT& outPort);
 
     // Synchronous HTTP POST — returns raw response body
     // If streaming=true, posts AI_MSG_STREAM_CHUNK messages per line to hwndNotify

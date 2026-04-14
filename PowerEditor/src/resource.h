@@ -826,4 +826,4 @@
 #define AI_MSG_RESULT            (AI_USER + 1)   // LPARAM = heap AIResult*
 #define AI_MSG_STREAM_CHUNK      (AI_USER + 2)   // LPARAM = heap std::string*
 #define AI_MSG_STREAM_DONE       (AI_USER + 3)
-#define AI_MSG_ERROR             (AI_USER + 4)   // LPARAM = heap std::string* (error msg)
+#define AI_MSG_ERROR             (AI_USER + 4)   // LPARAM = heap AIResult* (error msg in .error field)
