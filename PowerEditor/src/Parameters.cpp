@@ -6539,7 +6539,8 @@ void NppParameters::feedGUIParameters(const NppXml::Element& element)
 	}
 
 	// Read AI settings
-	NppXml::Element aiNode = NppXml::firstChildElement(element, "AIAssistant");
+	NppXml::Element guiConfigs = NppXml::firstChildElement(element, "GUIConfigs");
+	NppXml::Element aiNode = guiConfigs ? NppXml::firstChildElement(guiConfigs, "AIAssistant") : NppXml::Element{};
 	if (aiNode)
 	{
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "model"); n)
@@ -6555,9 +6556,15 @@ void NppParameters::feedGUIParameters(const NppXml::Element& element)
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "autoCompleteEnabled"); n)
 			_nppGUI._aiSettings.autoCompleteOn = getBoolAttribute(n, "value", true);
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "autoCompleteDelay"); n)
-			_nppGUI._aiSettings.autoCompleteDelayMs = NppXml::intAttribute(n, "value", 500);
+		{
+			int v = NppXml::intAttribute(n, "value", 500);
+			_nppGUI._aiSettings.autoCompleteDelayMs = (v < 50) ? 50 : (v > 10000) ? 10000 : v;
+		}
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "maxTokens"); n)
-			_nppGUI._aiSettings.maxTokens = NppXml::intAttribute(n, "value", 100);
+		{
+			int v = NppXml::intAttribute(n, "value", 100);
+			_nppGUI._aiSettings.maxTokens = (v < 1) ? 1 : (v > 32768) ? 32768 : v;
+		}
 	}
 }
 
@@ -7676,11 +7683,15 @@ void NppParameters::createXmlTreeFromGUIParams()
 
 	// Write AI settings
 	{
-		NppXml::Element oldAiNode = NppXml::firstChildElement(nppRoot, "AIAssistant");
-		if (oldAiNode)
-			NppXml::deleteChild(nppRoot, oldAiNode);
+		NppXml::Element guiConfigsNode = NppXml::firstChildElement(nppRoot, "GUIConfigs");
+		if (!guiConfigsNode)
+			guiConfigsNode = NppXml::createChildElement(nppRoot, "GUIConfigs");
 
-		NppXml::Element aiNode2 = NppXml::createChildElement(nppRoot, "AIAssistant");
+		NppXml::Element oldAiNode = NppXml::firstChildElement(guiConfigsNode, "AIAssistant");
+		if (oldAiNode)
+			NppXml::deleteChild(guiConfigsNode, oldAiNode);
+
+		NppXml::Element aiNode2 = NppXml::createChildElement(guiConfigsNode, "AIAssistant");
 		NppXml::Element aiModel    = NppXml::createChildElement(aiNode2, "model");
 		NppXml::Element aiEndpoint = NppXml::createChildElement(aiNode2, "endpoint");
 		NppXml::Element aiAutoCmp  = NppXml::createChildElement(aiNode2, "autoCompleteEnabled");
