@@ -40,6 +40,7 @@
 #include "documentMap.h"
 #include "functionListPanel.h"
 #include "fileBrowser.h"
+#include "AIAssistant/AIAssistant.h"
 #include "Common.h"
 #include "NppDarkMode.h"
 #include "dpiManagerV2.h"
@@ -202,6 +203,7 @@ Notepad_plus::~Notepad_plus()
 	delete _pDocMap;
 	delete _pFuncList;
 	delete _pFileBrowser;
+	delete _pAIAssistant;
 }
 
 
@@ -869,6 +871,10 @@ LRESULT Notepad_plus::init(HWND hwnd)
 	activateBuffer(_subEditView.getCurrentBufferID(), SUB_VIEW);
 
 	_mainEditView.grabFocus();
+
+	// Init AI Assistant
+	_pAIAssistant = new AIAssistant();
+	_pAIAssistant->init(_pPublicInterface->getHinst(), _pPublicInterface->getHSelf(), &_pEditView);
 
 	return TRUE;
 }
@@ -9306,4 +9312,16 @@ void Notepad_plus::changeReadOnlyUserModeForAllOpenedTabs(const bool ro)
 			}
 		}
 	}
+}
+
+void Notepad_plus::launchAIPanel()
+{
+	if (_pAIAssistant)
+		_pAIAssistant->togglePanel();
+}
+
+void Notepad_plus::runAIAction(const std::wstring& promptPrefix)
+{
+	if (_pAIAssistant)
+		_pAIAssistant->runSelectionAction(promptPrefix, _pPublicInterface->getHSelf());
 }

@@ -145,6 +145,7 @@ class ProjectPanel;
 class DocumentMap;
 class FunctionListPanel;
 class FileBrowser;
+class AIAssistant;
 struct QuoteParams;
 
 class Notepad_plus final
@@ -419,6 +420,7 @@ private:
 
 	DocumentMap* _pDocMap = nullptr;
 	FunctionListPanel* _pFuncList = nullptr;
+	AIAssistant* _pAIAssistant = nullptr;
 
 	std::vector<HWND> _sysTrayHiddenHwnd;
 
@@ -631,6 +633,8 @@ private:
 	void launchDocMap();
 	void launchFunctionList();
 	void launchFileBrowser(const std::vector<std::wstring> & folders, const std::wstring& selectedItemPath, bool fromScratch = false);
+	void launchAIPanel();
+	void runAIAction(const std::wstring& promptPrefix);
 	void showAllQuotes() const;
 	static DWORD WINAPI threadTextPlayer(void *text2display);
 	static DWORD WINAPI threadTextTroller(void *params);
