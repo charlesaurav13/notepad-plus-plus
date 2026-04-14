@@ -795,3 +795,35 @@
 #define MENUINDEX_WINDOW   11
 #define MENUINDEX_HELP     12
 #define MENUINDEX_LIST     14
+
+// AI Assistant dialogs
+#define IDD_AI_RESULT_DLG        6500
+#define IDD_AI_PANEL_DLG         6600
+
+// AI Assistant controls
+#define IDC_AI_RESULT_EDIT       6501
+#define IDC_AI_INSERT_BTN        6502
+#define IDC_AI_REPLACE_BTN       6503
+#define IDC_AI_CLOSE_BTN         6504
+
+#define IDC_AI_CHAT_HISTORY      6601
+#define IDC_AI_INPUT_EDIT        6602
+#define IDC_AI_SEND_BTN          6603
+#define IDC_AI_MODEL_COMBO       6604
+#define IDC_AI_INCL_SEL_CHK      6605
+#define IDC_AI_INCL_FILE_CHK     6606
+
+// AI Preferences page
+#define IDD_PREFERENCE_AI_PAGE   6700
+#define IDC_AI_PREF_ENDPOINT     6701
+#define IDC_AI_PREF_MODEL        6702
+#define IDC_AI_PREF_AUTOCOMPLETE 6703
+#define IDC_AI_PREF_DELAY        6704
+#define IDC_AI_PREF_MAXTOKENS    6705
+
+// AI Assistant WM_USER messages
+#define AI_USER                  (WM_USER + 8000)
+#define AI_MSG_RESULT            (AI_USER + 1)   // LPARAM = heap AIResult*
+#define AI_MSG_STREAM_CHUNK      (AI_USER + 2)   // LPARAM = heap std::string*
+#define AI_MSG_STREAM_DONE       (AI_USER + 3)
+#define AI_MSG_ERROR             (AI_USER + 4)   // LPARAM = heap std::string* (error msg)

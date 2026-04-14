@@ -658,3 +658,12 @@
 #define IDR_DROPLIST_MENU 14000
     #define    IDM_DROPLIST_LIST           (IDR_DROPLIST_MENU + 1)
     #define    IDM_DROPLIST_MRU_FIRST      (IDR_DROPLIST_MENU + 20)
+
+// AI Assistant commands
+#define IDM_AI                   (IDM + 9500)
+#define IDM_AI_PANEL             (IDM_AI + 1)   // toggle side panel
+#define IDM_AI_EXPLAIN           (IDM_AI + 2)   // explain selection
+#define IDM_AI_FIX               (IDM_AI + 3)   // fix/debug selection
+#define IDM_AI_REFACTOR          (IDM_AI + 4)   // refactor selection
+#define IDM_AI_SUMMARIZE         (IDM_AI + 5)   // summarize selection
+#define IDM_AI_CUSTOMPROMPT      (IDM_AI + 6)   // custom prompt dialog

@@ -188,6 +188,12 @@ SET(src_files
 			./WinControls/WindowsDlg/WinRect.cpp
 			./WinControls/ColourPicker/WordStyleDlg.cpp
 			./ScintillaComponent/xmlMatchedTagsHighlighter.cpp
+			./AIAssistant/OllamaClient.cpp
+			./AIAssistant/AISettings.cpp
+			./AIAssistant/AIAssistant.cpp
+			./AIAssistant/AIResultDlg.cpp
+			./AIAssistant/AIPanel.cpp
+			./AIAssistant/InlineCompleter.cpp
 			./notepad++.exe.manifest
 )
 
@@ -425,4 +431,5 @@ ADD_EXECUTABLE(notepad++ ${option} ${src_files} ${include_files} ${rcFiles})
 
 
 TARGET_LINK_LIBRARIES (notepad++ ${SCINTILLA_STATIC_LIBRARY} ${LEXILLA_STATIC_LIBRARY} ${win32_LIBRARIES})
+target_link_libraries(notepad++ PRIVATE winhttp)
 
