@@ -4211,6 +4211,22 @@ void Notepad_plus::command(int id)
 		}
 		break;
 
+		case IDM_AI_EXPLAIN:
+			runAIAction(L"Explain the following code in detail:\n\n");
+			break;
+		case IDM_AI_FIX:
+			runAIAction(L"Find and fix bugs in the following code. Show the corrected code:\n\n");
+			break;
+		case IDM_AI_REFACTOR:
+			runAIAction(L"Refactor the following code for clarity and best practices:\n\n");
+			break;
+		case IDM_AI_SUMMARIZE:
+			runAIAction(L"Summarize what the following code does in 2-3 sentences:\n\n");
+			break;
+		case IDM_AI_PANEL:
+			launchAIPanel();
+			break;
+
 		default :
 			if (id > IDM_FILEMENU_LASTONE && id < (IDM_FILEMENU_LASTONE + _lastRecentFileList.getMaxNbLRF() + 1))
 			{

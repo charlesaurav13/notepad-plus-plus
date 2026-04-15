@@ -1941,11 +1941,22 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 						switchEditViewTo(SUB_VIEW);
 
 					ContextMenu scintillaContextmenu;
-					
+
 					std::vector<MenuItemUnit>& tmp = nppParam.getContextMenuItems();
 					bool copyLink = (_pEditView->getSelectedTextCount() == 0) && _pEditView->getIndicatorRange(URL_INDIC);
 					scintillaContextmenu.create(hwnd, tmp, _mainMenuHandle, copyLink);
-					
+
+					// AI Assistant submenu (Feature A)
+					HMENU hAiMenu = CreatePopupMenu();
+					AppendMenu(hAiMenu, MF_STRING, IDM_AI_EXPLAIN,      L"Explain Selection");
+					AppendMenu(hAiMenu, MF_STRING, IDM_AI_FIX,          L"Fix / Debug");
+					AppendMenu(hAiMenu, MF_STRING, IDM_AI_REFACTOR,     L"Refactor");
+					AppendMenu(hAiMenu, MF_STRING, IDM_AI_SUMMARIZE,    L"Summarize");
+					AppendMenu(hAiMenu, MF_SEPARATOR, 0, nullptr);
+					AppendMenu(hAiMenu, MF_STRING, IDM_AI_CUSTOMPROMPT, L"Custom Prompt...");
+					AppendMenu(scintillaContextmenu.getMenuHandle(), MF_POPUP | MF_STRING,
+					           reinterpret_cast<UINT_PTR>(hAiMenu), L"AI Assistant");
+
 					POINT p{};
 					p.x = GET_X_LPARAM(lParam);
 					p.y = GET_Y_LPARAM(lParam);
