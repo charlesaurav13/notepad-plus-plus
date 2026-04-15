@@ -1952,8 +1952,6 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 					AppendMenu(hAiMenu, MF_STRING, IDM_AI_FIX,          L"Fix / Debug");
 					AppendMenu(hAiMenu, MF_STRING, IDM_AI_REFACTOR,     L"Refactor");
 					AppendMenu(hAiMenu, MF_STRING, IDM_AI_SUMMARIZE,    L"Summarize");
-					AppendMenu(hAiMenu, MF_SEPARATOR, 0, nullptr);
-					AppendMenu(hAiMenu, MF_STRING, IDM_AI_CUSTOMPROMPT, L"Custom Prompt...");
 					AppendMenu(scintillaContextmenu.getMenuHandle(), MF_POPUP | MF_STRING,
 					           reinterpret_cast<UINT_PTR>(hAiMenu), L"AI Assistant");
 
@@ -1969,6 +1967,7 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 						::ClientToScreen(activeViewHwnd, &p);
 					}
 					scintillaContextmenu.display(p);
+					DestroyMenu(hAiMenu);
 
 					return TRUE;
 				}

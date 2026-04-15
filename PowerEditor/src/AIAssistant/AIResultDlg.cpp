@@ -69,11 +69,14 @@ INT_PTR AIResultDlg::handleMsg(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_SIZE: {
         RECT rc; GetClientRect(hDlg, &rc);
         int w = rc.right, h = rc.bottom;
-        SetWindowPos(GetDlgItem(hDlg, IDC_AI_RESULT_EDIT), nullptr, 5, 5, w-10, h-50, SWP_NOZORDER);
-        int by = h - 38;
-        SetWindowPos(GetDlgItem(hDlg, IDC_AI_INSERT_BTN),  nullptr, 5,     by, 110, 24, SWP_NOZORDER);
-        SetWindowPos(GetDlgItem(hDlg, IDC_AI_REPLACE_BTN), nullptr, 120,   by, 120, 24, SWP_NOZORDER);
-        SetWindowPos(GetDlgItem(hDlg, IDC_AI_CLOSE_BTN),   nullptr, w-65,  by,  60, 24, SWP_NOZORDER);
+        int editH  = max(1, h - 50);
+        int editW  = max(1, w - 10);
+        int by     = max(0, h - 38);
+        int closeX = max(0, w - 65);
+        SetWindowPos(GetDlgItem(hDlg, IDC_AI_RESULT_EDIT), nullptr, 5, 5, editW, editH, SWP_NOZORDER);
+        SetWindowPos(GetDlgItem(hDlg, IDC_AI_INSERT_BTN),  nullptr, 5,      by, 110, 24, SWP_NOZORDER);
+        SetWindowPos(GetDlgItem(hDlg, IDC_AI_REPLACE_BTN), nullptr, 120,    by, 120, 24, SWP_NOZORDER);
+        SetWindowPos(GetDlgItem(hDlg, IDC_AI_CLOSE_BTN),   nullptr, closeX, by,  60, 24, SWP_NOZORDER);
         return TRUE;
     }
     }
@@ -93,9 +96,19 @@ void AIResultDlg::onResult(AIResult* r) {
 
 void AIResultDlg::insertAtCursor() {
     if (!_pView || _resultText.empty()) return;
-    _pView->execute(SCI_REPLACESEL, 0, reinterpret_cast<LPARAM>(toUtf8(_resultText).c_str()));
+    // Collapse selection to current position (caret) before inserting
+    intptr_t curPos = _pView->execute(SCI_GETCURRENTPOS);
+    _pView->execute(SCI_SETSEL, curPos, curPos);
+    std::string utf8 = toUtf8(_resultText);
+    _pView->execute(SCI_REPLACESEL, 0, reinterpret_cast<LPARAM>(utf8.c_str()));
 }
-void AIResultDlg::replaceSelection() { insertAtCursor(); }
+
+void AIResultDlg::replaceSelection() {
+    // Replaces the current selection with AI result
+    if (!_pView || _resultText.empty()) return;
+    std::string utf8 = toUtf8(_resultText);
+    _pView->execute(SCI_REPLACESEL, 0, reinterpret_cast<LPARAM>(utf8.c_str()));
+}
 
 void showAIResultDlg(HINSTANCE hInst, HWND hwndParent, OllamaClient* client,
                      const std::string& prompt, ScintillaEditView* pEditView) {
