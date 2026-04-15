@@ -213,6 +213,10 @@ BOOL Notepad_plus::notify(SCNotification *notification)
 					autoC->update(notification->ch);
 				}
 			}
+
+			// Forward to AI inline completer
+			if (_pAIAssistant)
+				_pAIAssistant->onCharAdded(static_cast<wchar_t>(notification->ch));
 			break;
 		}
 

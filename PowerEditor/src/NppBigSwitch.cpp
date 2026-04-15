@@ -4290,6 +4290,12 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 				return TRUE;
 			}
 
+			else if (message == (WM_APP + 1701))
+			{
+				_statusBar.setText(L"AI: Ollama not found \u2014 start Ollama to enable AI features", STATUSBAR_DOC_TYPE);
+				return TRUE;
+			}
+
 			return ::DefWindowProc(hwnd, message, wParam, lParam);
 		}
 	}

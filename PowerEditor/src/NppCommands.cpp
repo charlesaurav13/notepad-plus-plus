@@ -3418,6 +3418,9 @@ void Notepad_plus::command(int id)
 			{
 				_nativeLangSpeaker.changePreferenceDlgLang(_preference);
 			}
+
+			if (_pAIAssistant)
+				_pAIAssistant->reloadSettings();
 			break;
 		}
 

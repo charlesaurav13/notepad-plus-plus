@@ -1,14 +1,21 @@
 // PowerEditor/src/AIAssistant/AIAssistant.cpp
 #include "AIAssistant.h"
 #include "AIPanel.h"
+#include "AIResultDlg.h"
 #include "InlineCompleter.h"
 #include "../Parameters.h"
 #include "../ScintillaComponent/ScintillaEditView.h"
 #include <string>
 
-// Forward declaration — implemented in AIResultDlg.cpp (Task 5)
-extern void showAIResultDlg(HINSTANCE hInst, HWND hwndParent, OllamaClient* client,
-                             const std::string& prompt, ScintillaEditView* pEditView);
+struct AvailCheckParam { OllamaClient* client; HWND hNpp; };
+
+static DWORD WINAPI availCheckThread(LPVOID p) {
+    auto* param = reinterpret_cast<AvailCheckParam*>(p);
+    if (!param->client->isAvailable())
+        ::PostMessage(param->hNpp, WM_APP + 1701, 0, 0);
+    delete param;
+    return 0;
+}
 
 AIAssistant::AIAssistant() = default;
 AIAssistant::~AIAssistant() = default;
@@ -31,12 +38,11 @@ void AIAssistant::init(HINSTANCE hInst, HWND hNpp, ScintillaEditView** ppEditVie
     if (_completer)
         _completer->init(hNpp);
 
-    // Check Ollama availability and report via status bar if not found
-    if (!_client->isAvailable())
-    {
-        ::SendMessage(_hNpp, WM_SETTEXT, 0,
-            reinterpret_cast<LPARAM>(L"AI: Ollama not found — start Ollama to enable AI features"));
-    }
+    // Check Ollama availability asynchronously (off UI thread)
+    auto* avp = new AvailCheckParam{ _client.get(), hNpp };
+    HANDLE h = CreateThread(nullptr, 0, availCheckThread, avp, 0, nullptr);
+    if (h) CloseHandle(h);
+    else delete avp;
 }
 
 void AIAssistant::togglePanel()
