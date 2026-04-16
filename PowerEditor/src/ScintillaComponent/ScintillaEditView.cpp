@@ -700,6 +700,15 @@ LRESULT CALLBACK ScintillaEditView::ScintillaProc(
 
 		case WM_KEYDOWN:
 		{
+			// Give the AI InlineCompleter first chance to intercept Tab, Escape, and Ctrl+Space.
+			// AI_MSG_KEY_INTERCEPT returns non-zero if the key was consumed.
+			if (wParam == VK_TAB || wParam == VK_ESCAPE ||
+				(wParam == VK_SPACE && (GetKeyState(VK_CONTROL) & 0x8000)))
+			{
+				if (::SendMessage(pScint->_hParent, AI_MSG_KEY_INTERCEPT, wParam, 0) != 0)
+					return 0;
+			}
+
 			struct MultiCaretInfo {
 				int _len2remove;
 				size_t _selIndex;

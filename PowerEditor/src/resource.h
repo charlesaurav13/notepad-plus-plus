@@ -827,3 +827,6 @@
 #define AI_MSG_STREAM_CHUNK      (AI_USER + 2)   // LPARAM = heap std::string*
 #define AI_MSG_STREAM_DONE       (AI_USER + 3)
 #define AI_MSG_ERROR             (AI_USER + 4)   // LPARAM = heap AIResult* (error msg in .error field)
+// Sent by ScintillaEditView to parent to let InlineCompleter intercept Tab/Esc/Ctrl+Space.
+// wParam = virtual key code. Returns non-zero if the key was consumed.
+#define AI_MSG_KEY_INTERCEPT     (AI_USER + 5)

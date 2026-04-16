@@ -33,6 +33,9 @@
 #include "fileBrowser.h"
 #include "NppDarkMode.h"
 #include "NppConstants.h"
+#include "AIAssistant/AIAssistant.h"
+#include "AIAssistant/InlineCompleter.h"
+#include "AIAssistant/OllamaClient.h"
 
 using namespace std;
 
@@ -4304,6 +4307,38 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 			{
 				_statusBar.setText(L"AI: Ollama not found \u2014 start Ollama to enable AI features", STATUSBAR_DOC_TYPE);
 				return TRUE;
+			}
+
+			else if (message == AI_MSG_RESULT)
+			{
+				auto* pResult = reinterpret_cast<AIResult*>(lParam);
+				if (pResult && _pAIAssistant)
+				{
+					InlineCompleter* ic = _pAIAssistant->getCompleter();
+					if (ic) ic->showGhostText(pResult->success ? pResult->response : "");
+				}
+				delete pResult;
+				return TRUE;
+			}
+
+			else if (message == AI_MSG_KEY_INTERCEPT)
+			{
+				// wParam = virtual key code sent from ScintillaEditView's WM_KEYDOWN
+				if (_pAIAssistant)
+				{
+					InlineCompleter* ic = _pAIAssistant->getCompleter();
+					if (ic)
+					{
+						if (wParam == VK_TAB && ic->onTab())   return 1;
+						if (wParam == VK_ESCAPE && ic->onEscape()) return 1;
+						if (wParam == VK_SPACE && (GetKeyState(VK_CONTROL) & 0x8000))
+						{
+							ic->triggerNow();
+							return 1;
+						}
+					}
+				}
+				return 0;
 			}
 
 			return ::DefWindowProc(hwnd, message, wParam, lParam);
