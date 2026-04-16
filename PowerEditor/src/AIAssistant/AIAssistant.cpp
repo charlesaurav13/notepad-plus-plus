@@ -29,7 +29,7 @@ void AIAssistant::init(HINSTANCE hInst, HWND hNpp, ScintillaEditView** ppEditVie
     const NppAISettings& settings = NppParameters::getInstance().getNppGUI()._aiSettings;
 
     _client    = std::make_unique<OllamaClient>(settings.endpoint, settings.model);
-    _panel     = std::make_unique<AIPanel>();
+    _panel     = std::make_unique<AIPanel>(_client.get());
     _completer = std::make_unique<InlineCompleter>();
 
     if (_panel)

@@ -41,6 +41,7 @@
 #include "functionListPanel.h"
 #include "fileBrowser.h"
 #include "AIAssistant/AIAssistant.h"
+#include "AIAssistant/AIPanel.h"
 #include "Common.h"
 #include "NppDarkMode.h"
 #include "dpiManagerV2.h"
@@ -9316,8 +9317,31 @@ void Notepad_plus::changeReadOnlyUserModeForAllOpenedTabs(const bool ro)
 
 void Notepad_plus::launchAIPanel()
 {
-	if (_pAIAssistant)
-		_pAIAssistant->togglePanel();
+	if (!_pAIAssistant)
+		return;
+
+	AIPanel* panel = _pAIAssistant->getPanel();
+	if (!panel)
+		return;
+
+	if (!panel->isCreated())
+	{
+		DockedWidgetData data{};
+		panel->create(&data, {});
+
+		::SendMessage(_pPublicInterface->getHSelf(), NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, reinterpret_cast<LPARAM>(panel->getHSelf()));
+
+		data.uMask = DWS_DF_CONT_RIGHT | DWS_ICONTAB | DWS_USEOWNDARKMODE;
+		data.pszModuleName = NPP_INTERNAL_FUNCTION_STR;
+		data.dlgID = IDM_AI_PANEL;
+
+		static wchar_t title[] = AI_PANEL_TITLE;
+		data.pszName = title;
+
+		::SendMessage(_pPublicInterface->getHSelf(), NPPM_DMMREGASDCKDLG, 0, reinterpret_cast<LPARAM>(&data));
+	}
+
+	panel->display(!panel->isVisible());
 }
 
 void Notepad_plus::runAIAction(const std::wstring& promptPrefix)
