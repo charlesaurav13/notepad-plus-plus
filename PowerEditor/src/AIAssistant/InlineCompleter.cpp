@@ -137,6 +137,7 @@ void InlineCompleter::showGhostText(const std::string& completion)
     _ghostText = u8w(completion);
 
     intptr_t curLine = view->execute(SCI_LINEFROMPOSITION, view->execute(SCI_GETCURRENTPOS));
+    _ghostLine = curLine;
 
     std::string annotText = wu8(_ghostText);
     view->execute(SCI_ANNOTATIONSETTEXT,    curLine, reinterpret_cast<LPARAM>(annotText.c_str()));
@@ -150,11 +151,12 @@ void InlineCompleter::clearGhostText()
     if (_ppView && *_ppView)
     {
         ScintillaEditView* view = *_ppView;
-        intptr_t curLine = view->execute(SCI_LINEFROMPOSITION, view->execute(SCI_GETCURRENTPOS));
-        view->execute(SCI_ANNOTATIONSETTEXT,    curLine, reinterpret_cast<LPARAM>(""));
-        view->execute(SCI_ANNOTATIONSETVISIBLE, ANNOTATION_HIDDEN);
+        intptr_t curLine = _ghostLine;
+        if (curLine < 0) { _ghostText.clear(); return; } // no annotation placed
+        view->execute(SCI_ANNOTATIONSETTEXT, curLine, reinterpret_cast<LPARAM>(nullptr));
     }
     _ghostText.clear();
+    _ghostLine = -1;
 }
 
 bool InlineCompleter::onTab()

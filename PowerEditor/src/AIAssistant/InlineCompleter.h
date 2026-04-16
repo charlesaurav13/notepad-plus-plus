@@ -42,10 +42,11 @@ private:
 
     OllamaClient*       _client;
     ScintillaEditView** _ppView;
-    HWND                _hNpp    = nullptr;
-    UINT_PTR            _timerId = 0;
+    HWND                _hNpp      = nullptr;
+    UINT_PTR            _timerId   = 0;
     std::wstring        _ghostText;
-    bool                _waiting = false; // request in flight
+    bool                _waiting   = false; // request in flight
+    intptr_t            _ghostLine = -1;    // line where annotation was placed
 
     static InlineCompleter* _instance; // for timer callback
 };

@@ -4321,6 +4321,18 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 				return TRUE;
 			}
 
+			else if (message == AI_MSG_ERROR)
+			{
+				auto* pResult = reinterpret_cast<AIResult*>(lParam);
+				if (pResult && _pAIAssistant)
+				{
+					InlineCompleter* ic = _pAIAssistant->getCompleter();
+					if (ic) ic->showGhostText(""); // resets _waiting = false
+				}
+				delete pResult;
+				return TRUE;
+			}
+
 			else if (message == AI_MSG_KEY_INTERCEPT)
 			{
 				// wParam = virtual key code sent from ScintillaEditView's WM_KEYDOWN
