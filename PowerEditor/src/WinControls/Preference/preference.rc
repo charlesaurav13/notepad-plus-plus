@@ -18,6 +18,7 @@
 
 #include <windows.h>
 #include "preference_rc.h"
+#include "../../resource.h"
 
 #ifndef IDC_STATIC
 #define IDC_STATIC -1
@@ -660,4 +661,23 @@ BEGIN
     EDITTEXT        IDC_EDIT_SESSIONFILEEXT,380,127,34,12,ES_AUTOHSCROLL
     RTEXT           "Workspace file ext.:",IDC_WORKSPACEFILEEXT_STATIC,270,147,108,8
     EDITTEXT        IDC_EDIT_WORKSPACEFILEEXT,380,144,34,12,ES_AUTOHSCROLL
+END
+
+IDD_PREFERENCE_AI_PAGE DIALOGEX 115, 10, 460, 205
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "Ollama Connection", IDC_STATIC, 4, 4, 282, 50
+    LTEXT           "Endpoint:", IDC_STATIC, 12, 20, 45, 9
+    EDITTEXT        IDC_AI_PREF_ENDPOINT, 60, 18, 218, 12
+    LTEXT           "Default model:", IDC_STATIC, 12, 36, 55, 9
+    EDITTEXT        IDC_AI_PREF_MODEL, 70, 34, 208, 12
+
+    GROUPBOX        "Inline Completions", IDC_STATIC, 4, 60, 282, 50
+    CONTROL         "Enable inline completions", IDC_AI_PREF_AUTOCOMPLETE,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 12, 76, 150, 12
+    LTEXT           "Delay (ms):", IDC_STATIC, 12, 94, 55, 9
+    EDITTEXT        IDC_AI_PREF_DELAY, 70, 92, 60, 12
+    LTEXT           "Max tokens:", IDC_STATIC, 12, 110, 55, 9
+    EDITTEXT        IDC_AI_PREF_MAXTOKENS, 70, 108, 60, 12
 END

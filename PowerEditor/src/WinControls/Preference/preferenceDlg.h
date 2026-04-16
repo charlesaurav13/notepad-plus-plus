@@ -386,6 +386,15 @@ private :
 	HWND _largeFileRestrictionTip = nullptr;
 };
 
+class AISubDlg : public StaticDialog
+{
+public:
+	AISubDlg() = default;
+
+private:
+	intptr_t CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam) override;
+};
+
 class PreferenceDlg : public StaticDialog
 {
 friend class NativeLangSpeaker;
@@ -447,6 +456,7 @@ private :
 	CloudAndLinkSubDlg _cloudAndLinkSubDlg;
 	SearchEngineSubDlg _searchEngineSubDlg;
 	SearchingSubDlg _searchingSubDlg;
+	AISubDlg _aiSubDlg;
 
 	ControlInfoTip _gotoTip;
 };

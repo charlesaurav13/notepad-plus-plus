@@ -309,6 +309,9 @@ intptr_t CALLBACK PreferenceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			_searchEngineSubDlg.init(_hInst, _hSelf);
 			_searchEngineSubDlg.create(IDD_PREFERENCE_SUB_SEARCHENGINE, false, false);
 
+			_aiSubDlg.init(_hInst, _hSelf);
+			_aiSubDlg.create(IDD_PREFERENCE_AI_PAGE, false, false);
+
 			_wVector.push_back(DlgInfo(&_generalSubDlg, L"General", L"Global"));
 			_wVector.push_back(DlgInfo(&_toolbarSubDlg, L"Toolbar", L"Toolbar"));
 			_wVector.push_back(DlgInfo(&_tabbarSubDlg, L"Tab Bar", L"Tabbar"));
@@ -333,6 +336,7 @@ intptr_t CALLBACK PreferenceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			_wVector.push_back(DlgInfo(&_cloudAndLinkSubDlg, L"Cloud & Link", L"Cloud"));
 			_wVector.push_back(DlgInfo(&_searchEngineSubDlg, L"Search Engine", L"SearchEngine"));
 			_wVector.push_back(DlgInfo(&_miscSubDlg, L"MISC.", L"MISC"));
+			_wVector.push_back(DlgInfo(&_aiSubDlg, L"AI Assistant", L"AIAssistant"));
 
 
 			makeCategoryList();
@@ -662,6 +666,7 @@ void PreferenceDlg::destroy()
 	_multiInstanceSubDlg.destroy();
 	_delimiterSubDlg.destroy();
 	_performanceSubDlg.destroy();
+	_aiSubDlg.destroy();
 }
 
 void TabbarSubDlg::setTabbarAlternateIcons(bool enable)
@@ -7312,6 +7317,92 @@ intptr_t CALLBACK SearchingSubDlg::run_dlgProc(UINT message, WPARAM wParam, LPAR
 
 				default:
 					return FALSE;
+			}
+		}
+		break;
+	}
+	return FALSE;
+}
+
+intptr_t CALLBACK AISubDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM /*lParam*/)
+{
+	NppParameters& nppParams = NppParameters::getInstance();
+	NppGUI& nppGUI = nppParams.getNppGUI();
+	NppAISettings& aiSettings = nppGUI._aiSettings;
+
+	switch (message)
+	{
+		case WM_INITDIALOG:
+		{
+			::SetDlgItemText(_hSelf, IDC_AI_PREF_ENDPOINT, aiSettings.endpoint.c_str());
+			::SetDlgItemText(_hSelf, IDC_AI_PREF_MODEL, aiSettings.model.c_str());
+			::SendDlgItemMessage(_hSelf, IDC_AI_PREF_AUTOCOMPLETE, BM_SETCHECK,
+				aiSettings.autoCompleteOn ? BST_CHECKED : BST_UNCHECKED, 0);
+
+			wchar_t buf[32] = {};
+			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%d", aiSettings.autoCompleteDelayMs);
+			::SetDlgItemText(_hSelf, IDC_AI_PREF_DELAY, buf);
+
+			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%d", aiSettings.maxTokens);
+			::SetDlgItemText(_hSelf, IDC_AI_PREF_MAXTOKENS, buf);
+
+			return TRUE;
+		}
+
+		case WM_CTLCOLOREDIT:
+		{
+			return NppDarkMode::onCtlColorCtrl(reinterpret_cast<HDC>(wParam));
+		}
+
+		case WM_CTLCOLORDLG:
+		case WM_CTLCOLORSTATIC:
+		{
+			return NppDarkMode::onCtlColorDlg(reinterpret_cast<HDC>(wParam));
+		}
+
+		case WM_COMMAND:
+		{
+			if (HIWORD(wParam) == EN_CHANGE)
+			{
+				const int ctrlID = LOWORD(wParam);
+				if (ctrlID == IDC_AI_PREF_ENDPOINT)
+				{
+					wchar_t buf[2048] = {};
+					::GetDlgItemText(_hSelf, IDC_AI_PREF_ENDPOINT, buf, _countof(buf));
+					aiSettings.endpoint = buf;
+					return TRUE;
+				}
+				else if (ctrlID == IDC_AI_PREF_MODEL)
+				{
+					wchar_t buf[512] = {};
+					::GetDlgItemText(_hSelf, IDC_AI_PREF_MODEL, buf, _countof(buf));
+					aiSettings.model = buf;
+					return TRUE;
+				}
+				else if (ctrlID == IDC_AI_PREF_DELAY)
+				{
+					wchar_t buf[32] = {};
+					::GetDlgItemText(_hSelf, IDC_AI_PREF_DELAY, buf, _countof(buf));
+					const int val = _wtoi(buf);
+					if (val >= 0)
+						aiSettings.autoCompleteDelayMs = val;
+					return TRUE;
+				}
+				else if (ctrlID == IDC_AI_PREF_MAXTOKENS)
+				{
+					wchar_t buf[32] = {};
+					::GetDlgItemText(_hSelf, IDC_AI_PREF_MAXTOKENS, buf, _countof(buf));
+					const int val = _wtoi(buf);
+					if (val > 0)
+						aiSettings.maxTokens = val;
+					return TRUE;
+				}
+			}
+			else if (HIWORD(wParam) == BN_CLICKED && LOWORD(wParam) == IDC_AI_PREF_AUTOCOMPLETE)
+			{
+				aiSettings.autoCompleteOn = (::SendDlgItemMessage(_hSelf, IDC_AI_PREF_AUTOCOMPLETE,
+					BM_GETCHECK, 0, 0) == BST_CHECKED);
+				return TRUE;
 			}
 		}
 		break;
