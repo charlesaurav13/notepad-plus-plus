@@ -24,7 +24,10 @@ private:
     void onStreamDone();
     void appendToHistory(const std::wstring& sender, const std::wstring& text);
     void populateModelCombo();
-    std::string buildPrompt(const std::wstring& userInput);
+    std::string buildPrompt();
+
+    struct ModelFetchParam { OllamaClient* client; HWND hPanel; };
+    static DWORD WINAPI modelFetchThread(LPVOID p);
 
     OllamaClient* _client;
     std::vector<std::pair<std::wstring, std::wstring>> _history;

@@ -2,6 +2,8 @@
 #include "../resource.h"
 #include <richedit.h>
 
+#define WM_AI_MODELS_READY (WM_APP + 1702)
+
 static std::wstring toWide(const std::string& s) {
     if (s.empty()) return {};
     int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, nullptr, 0);
@@ -54,6 +56,19 @@ INT_PTR CALLBACK AIPanel::run_dlgProc(UINT msg, WPARAM wp, LPARAM lp) {
         return TRUE;
     }
 
+    case WM_AI_MODELS_READY: {
+        auto* models = reinterpret_cast<std::vector<std::wstring>*>(lp);
+        HWND hCombo = GetDlgItem(_hSelf, IDC_AI_MODEL_COMBO);
+        SendMessage(hCombo, CB_RESETCONTENT, 0, 0);
+        for (auto& m : *models)
+            SendMessage(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(m.c_str()));
+        int idx = (int)SendMessage(hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1,
+                                    reinterpret_cast<LPARAM>(_client->getModel().c_str()));
+        SendMessage(hCombo, CB_SETCURSEL, max(0, idx), 0);
+        delete models;
+        return TRUE;
+    }
+
     case WM_SIZE: {
         RECT rc; GetClientRect(_hSelf, &rc);
         int w = max(1, (int)rc.right);
@@ -83,22 +98,33 @@ void AIPanel::onInitDialog() {
 }
 
 void AIPanel::populateModelCombo() {
+    // Pre-fill with current model immediately (non-blocking)
     HWND hCombo = GetDlgItem(_hSelf, IDC_AI_MODEL_COMBO);
     SendMessage(hCombo, CB_RESETCONTENT, 0, 0);
-    auto models = _client->listModels();
-    if (models.empty()) models.push_back(_client->getModel());
-    for (auto& m : models)
-        SendMessage(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(m.c_str()));
-    int idx = (int)SendMessage(hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1,
-                                reinterpret_cast<LPARAM>(_client->getModel().c_str()));
-    SendMessage(hCombo, CB_SETCURSEL, max(0, idx), 0);
+    SendMessage(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(_client->getModel().c_str()));
+    SendMessage(hCombo, CB_SETCURSEL, 0, 0);
+
+    // Async fetch full model list
+    auto* param = new ModelFetchParam{ _client, _hSelf };
+    HANDLE h = CreateThread(nullptr, 0, modelFetchThread, param, 0, nullptr);
+    if (h) CloseHandle(h);
+    else delete param;
 }
 
-std::string AIPanel::buildPrompt(const std::wstring& userInput) {
+DWORD WINAPI AIPanel::modelFetchThread(LPVOID p) {
+    auto* param = reinterpret_cast<ModelFetchParam*>(p);
+    auto* models = new std::vector<std::wstring>(param->client->listModels());
+    if (!PostMessage(param->hPanel, WM_AI_MODELS_READY, 0, reinterpret_cast<LPARAM>(models)))
+        delete models;
+    delete param;
+    return 0;
+}
+
+std::string AIPanel::buildPrompt() {
     std::string prompt;
     for (auto& [role, text] : _history)
         prompt += toUtf8(role) + ": " + toUtf8(text) + "\n";
-    prompt += "User: " + toUtf8(userInput) + "\nAssistant:";
+    prompt += "Assistant:";
     return prompt;
 }
 
@@ -125,7 +151,7 @@ void AIPanel::onSendMessage() {
     }
 
     appendToHistory(L"You", input);
-    std::string prompt = buildPrompt(input);
+    std::string prompt = buildPrompt();
     _streaming = true;
     _pendingResponse.clear();
 
@@ -151,6 +177,9 @@ void AIPanel::onStreamChunk(const std::string& chunk) {
 
 void AIPanel::onStreamDone() {
     _history.push_back({ L"AI", toWide(_pendingResponse) });
+    // Keep only last 20 history entries to prevent unbounded prompt growth
+    if (_history.size() > 20)
+        _history.erase(_history.begin(), _history.begin() + (_history.size() - 20));
     _pendingResponse.clear();
     _streaming = false;
     HWND hChat = GetDlgItem(_hSelf, IDC_AI_CHAT_HISTORY);
