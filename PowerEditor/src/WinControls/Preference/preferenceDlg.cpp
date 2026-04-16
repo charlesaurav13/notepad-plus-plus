@@ -7346,6 +7346,7 @@ intptr_t CALLBACK AISubDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM /*lP
 			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%d", aiSettings.maxTokens);
 			::SetDlgItemText(_hSelf, IDC_AI_PREF_MAXTOKENS, buf);
 
+			NppDarkMode::autoSubclassAndThemeWindowNotify(_hSelf);
 			return TRUE;
 		}
 
@@ -7385,20 +7386,30 @@ intptr_t CALLBACK AISubDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM /*lP
 				{
 					wchar_t buf[32] = {};
 					::GetDlgItemText(_hSelf, IDC_AI_PREF_DELAY, buf, _countof(buf));
-					const int val = _wtoi(buf);
-					if (val >= 0)
-						aiSettings.autoCompleteDelayMs = val;
-					nppParams.saveConfig_xml();
+					if (buf[0] != L'\0')
+					{
+						const int val = _wtoi(buf);
+						if (val >= 0)
+						{
+							aiSettings.autoCompleteDelayMs = val;
+							nppParams.saveConfig_xml();
+						}
+					}
 					return TRUE;
 				}
 				else if (ctrlID == IDC_AI_PREF_MAXTOKENS)
 				{
 					wchar_t buf[32] = {};
 					::GetDlgItemText(_hSelf, IDC_AI_PREF_MAXTOKENS, buf, _countof(buf));
-					const int val = _wtoi(buf);
-					if (val > 0)
-						aiSettings.maxTokens = val;
-					nppParams.saveConfig_xml();
+					if (buf[0] != L'\0')
+					{
+						const int val = _wtoi(buf);
+						if (val > 0)
+						{
+							aiSettings.maxTokens = val;
+							nppParams.saveConfig_xml();
+						}
+					}
 					return TRUE;
 				}
 			}
