@@ -1,6 +1,7 @@
 #include "AIPanel.h"
 #include "../resource.h"
 #include <richedit.h>
+#include <algorithm>
 
 #define WM_AI_MODELS_READY (WM_APP + 1702)
 
@@ -64,18 +65,18 @@ INT_PTR CALLBACK AIPanel::run_dlgProc(UINT msg, WPARAM wp, LPARAM lp) {
             SendMessage(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(m.c_str()));
         int idx = (int)SendMessage(hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1,
                                     reinterpret_cast<LPARAM>(_client->getModel().c_str()));
-        SendMessage(hCombo, CB_SETCURSEL, max(0, idx), 0);
+        SendMessage(hCombo, CB_SETCURSEL, std::max(0, idx), 0);
         delete models;
         return TRUE;
     }
 
     case WM_SIZE: {
         RECT rc; GetClientRect(_hSelf, &rc);
-        int w = max(1, (int)rc.right);
-        int h = max(1, (int)rc.bottom);
-        int comboH = 22, chkH = 18, btnW = 56, inputH = max(40, h / 5);
-        int histH  = max(1, h - inputH - comboH - chkH - 16);
-        int inputW = max(1, w - btnW - 12);
+        int w = std::max(1, (int)rc.right);
+        int h = std::max(1, (int)rc.bottom);
+        int comboH = 22, chkH = 18, btnW = 56, inputH = std::max(40, h / 5);
+        int histH  = std::max(1, h - inputH - comboH - chkH - 16);
+        int inputW = std::max(1, w - btnW - 12);
         int y = 4;
         SetWindowPos(GetDlgItem(_hSelf, IDC_AI_CHAT_HISTORY), nullptr, 4, y, w-8, histH, SWP_NOZORDER);
         y += histH + 4;
@@ -165,7 +166,7 @@ void AIPanel::onSendMessage() {
 }
 
 void AIPanel::onStreamChunk(const std::string& chunk) {
-    _pendingResponse += chunk;
+    _pendingResponse += toWide(chunk);
     std::wstring wchunk = toWide(chunk);
     HWND hChat = GetDlgItem(_hSelf, IDC_AI_CHAT_HISTORY);
     SendMessage(hChat, EM_SETREADONLY, FALSE, 0);
@@ -176,7 +177,7 @@ void AIPanel::onStreamChunk(const std::string& chunk) {
 }
 
 void AIPanel::onStreamDone() {
-    _history.push_back({ L"AI", toWide(_pendingResponse) });
+    _history.emplace_back(std::wstring(L"AI"), _pendingResponse);
     // Keep only last 20 history entries to prevent unbounded prompt growth
     if (_history.size() > 20)
         _history.erase(_history.begin(), _history.begin() + (_history.size() - 20));

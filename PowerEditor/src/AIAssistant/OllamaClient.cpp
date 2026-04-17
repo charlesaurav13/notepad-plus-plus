@@ -179,7 +179,7 @@ std::string OllamaClient::httpPost(const std::wstring& host, INTERNET_PORT port,
         DWORD bytesAvail = 0;
         char buf[1024];
         while (WinHttpQueryDataAvailable(hReq, &bytesAvail) && bytesAvail > 0) {
-            DWORD toRead = min(bytesAvail, (DWORD)sizeof(buf));
+            DWORD toRead = std::min(bytesAvail, (DWORD)sizeof(buf));
             DWORD bytesRead = 0;
             if (!WinHttpReadData(hReq, buf, toRead, &bytesRead) || bytesRead == 0) break;
             errBody.append(buf, bytesRead);

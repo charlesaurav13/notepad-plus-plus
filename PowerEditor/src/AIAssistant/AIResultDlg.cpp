@@ -69,10 +69,10 @@ INT_PTR AIResultDlg::handleMsg(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_SIZE: {
         RECT rc; GetClientRect(hDlg, &rc);
         int w = rc.right, h = rc.bottom;
-        int editH  = max(1, h - 50);
-        int editW  = max(1, w - 10);
-        int by     = max(0, h - 38);
-        int closeX = max(0, w - 65);
+        int editH  = std::max(1, h - 50);
+        int editW  = std::max(1, w - 10);
+        int by     = std::max(0, h - 38);
+        int closeX = std::max(0, w - 65);
         SetWindowPos(GetDlgItem(hDlg, IDC_AI_RESULT_EDIT), nullptr, 5, 5, editW, editH, SWP_NOZORDER);
         SetWindowPos(GetDlgItem(hDlg, IDC_AI_INSERT_BTN),  nullptr, 5,      by, 110, 24, SWP_NOZORDER);
         SetWindowPos(GetDlgItem(hDlg, IDC_AI_REPLACE_BTN), nullptr, 120,    by, 120, 24, SWP_NOZORDER);
