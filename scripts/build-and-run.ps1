@@ -68,7 +68,8 @@ OK "winget available"
 Winget-Install "Git.Git" "Git"
 
 # Ensure git.exe is on PATH
-$gitExe = (Get-Command git -ErrorAction SilentlyContinue)?.Source
+$_gitCmd = Get-Command git -ErrorAction SilentlyContinue
+$gitExe  = if ($_gitCmd) { $_gitCmd.Source } else { $null }
 if (-not $gitExe) {
     $gitExe = "$env:ProgramFiles\Git\cmd\git.exe"
     if (-not (Test-Path $gitExe)) { Die "git.exe not found after install. Reboot and re-run." }
