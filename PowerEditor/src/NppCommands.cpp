@@ -23,6 +23,7 @@
 #include <shlobj.h>
 #include <filesystem>
 #include "Notepad_plus_Window.h"
+#include "AIAssistant/AIAssistant.h"
 #include "EncodingMapper.h"
 #include "ShortcutMapper.h"
 #include "TaskListDlg.h"

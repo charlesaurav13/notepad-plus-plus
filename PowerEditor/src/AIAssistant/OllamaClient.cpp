@@ -1,4 +1,6 @@
 // PowerEditor/src/AIAssistant/OllamaClient.cpp
+#include <windows.h>
+#include <winhttp.h>
 #include "OllamaClient.h"
 #include "../resource.h"
 #include "../json/json.hpp"

@@ -797,8 +797,8 @@
 #define MENUINDEX_LIST     14
 
 // AI Assistant dialogs
-#define IDD_AI_RESULT_DLG        6500
-#define IDD_AI_PANEL_DLG         6600
+#define IDD_AI_RESULT_DLG        7200
+#define IDD_AI_PANEL_DLG         7210
 
 // AI Assistant controls
 #define IDC_AI_RESULT_EDIT       6501

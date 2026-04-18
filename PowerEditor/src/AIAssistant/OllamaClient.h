@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <windows.h>
-#include <winhttp.h>
 
 // Posted to hwndNotify when generate() completes.
 // Caller must delete the AIResult* received in LPARAM.
@@ -62,13 +61,13 @@ private:
     static DWORD WINAPI workerThread(LPVOID param);
 
     // Parse _endpoint into host and port (strips http://)
-    void parseEndpoint(std::wstring& outHost, INTERNET_PORT& outPort) const;
+    void parseEndpoint(std::wstring& outHost, unsigned short& outPort) const;
     // Parse an explicit endpoint string into host and port
-    static void parseEndpointStr(const std::wstring& endpoint, std::wstring& outHost, INTERNET_PORT& outPort);
+    static void parseEndpointStr(const std::wstring& endpoint, std::wstring& outHost, unsigned short& outPort);
 
     // Synchronous HTTP POST — returns raw response body
     // If streaming=true, posts AI_MSG_STREAM_CHUNK messages per line to hwndNotify
-    std::string httpPost(const std::wstring& host, INTERNET_PORT port,
+    std::string httpPost(const std::wstring& host, unsigned short port,
                          const std::wstring& path, const std::string& body,
                          bool streaming, HWND hwndNotify);
 };

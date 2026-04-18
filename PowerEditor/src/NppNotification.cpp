@@ -17,6 +17,7 @@
 
 #include "localization.h"
 #include "Notepad_plus_Window.h"
+#include "AIAssistant/AIAssistant.h"
 #include "functionListPanel.h"
 #include "xmlMatchedTagsHighlighter.h"
 #include "VerticalFileSwitcher.h"
