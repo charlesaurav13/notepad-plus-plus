@@ -6550,7 +6550,7 @@ void NppParameters::feedGUIParameters(const NppXml::Element& element)
 		}
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "endpoint"); n)
 		{
-			const char* val = NppXml::attribute(n, "value", "http://localhost:11434");
+			const char* val = NppXml::attribute(n, "value", "http://192.168.1.25:11434");
 			_nppGUI._aiSettings.endpoint = string2wstring(val);
 		}
 		if (NppXml::Element n = NppXml::firstChildElement(aiNode, "autoCompleteEnabled"); n)
